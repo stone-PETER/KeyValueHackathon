@@ -170,7 +170,7 @@ const Analytics = () => {
   }, []);
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-md mb-6">
+    <div className="bg-white w-screen  rounded-xl shadow-md mb-6 p-10">
       <h2 className="text-xl font-semibold mb-4">Sales Analytics</h2>
       <div className="mb-4">
         <h3 className="font-medium mb-2">Daily Online & Offline Sales:</h3>

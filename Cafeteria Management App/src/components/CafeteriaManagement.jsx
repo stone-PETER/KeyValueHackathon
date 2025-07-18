@@ -22,7 +22,8 @@ function MealAdmin() {
   const [menuItems, setMenuItems] = useState([]);
   const [previousMenus, setPreviousMenus] = useState([]);
   const [scheduledMenus, setScheduledMenus] = useState([]);
-  const [activateSuccess, setActivateSuccess] = useState("");
+  const [activateSuccess, setActivateSuccess] = useState([]);
+  const [allMenuItems, setAllMenuItems] = useState([]); // For dropdown
 
   useEffect(() => {
     const fetchMenus = async () => {
@@ -33,12 +34,37 @@ function MealAdmin() {
       }));
       setPreviousMenus(allMenus);
       setScheduledMenus(allMenus.filter((menu) => menu.status === "scheduled"));
+
+      // Collect all unique items from all menus for dropdown
+      const items = [];
+      allMenus.forEach((menu) => {
+        (menu.items || []).forEach((item) => {
+          if (!items.find((i) => i.name === item.name)) {
+            items.push(item);
+          }
+        });
+      });
+      setAllMenuItems(items);
     };
     fetchMenus();
   }, [success, activateSuccess]);
 
   const handleMealChange = (e) => {
-    setMeal({ ...meal, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // If meal name is changed and matches an item, auto-fill price and description
+    if (name === "name") {
+      const selected = allMenuItems.find((item) => item.name === value);
+      if (selected) {
+        setMeal({
+          ...meal,
+          name: selected.name,
+          price: selected.price,
+          description: selected.description || "",
+        });
+        return;
+      }
+    }
+    setMeal({ ...meal, [name]: value });
   };
 
   const addMealToMenu = () => {
@@ -80,19 +106,32 @@ function MealAdmin() {
       </h2>
 
       <div className="flex flex-col gap-2 mb-4">
-        <input
+        <select
           name="name"
           value={meal.name}
           onChange={handleMealChange}
-          placeholder="Meal Name"
           className="border p-2 rounded"
-        />
+        >
+          <option value="">Select Meal Name</option>
+          {allMenuItems.map((item, idx) => (
+            <option key={idx} value={item.name}>
+              {item.name}
+            </option>
+          ))}
+        </select>
         <input
           name="price"
           value={meal.price}
           type="number"
           onChange={handleMealChange}
           placeholder="Price"
+          className="border p-2 rounded"
+        />
+        <input
+          name="description"
+          value={meal.description}
+          onChange={handleMealChange}
+          placeholder="Description"
           className="border p-2 rounded"
         />
         <input

@@ -34,6 +34,12 @@ const Navbar = () => {
               Offline Sales
             </Link>
             <Link
+              to="/items"
+              className={location.pathname === "/analytics" ? "underline" : ""}
+            >
+              items
+            </Link>
+            <Link
               to="/analytics"
               className={location.pathname === "/analytics" ? "underline" : ""}
             >

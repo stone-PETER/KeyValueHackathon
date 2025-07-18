@@ -8,6 +8,7 @@ import Home from "./components/Home";
 import "./App.css";
 import OfflineSales from "./components/OfflineSales";
 import Analytics from "./components/analytics";
+import MenuItems from "./components/MenuItems";
 
 function App() {
   return (
@@ -17,6 +18,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/offline" element={<OfflineSales />} />
+          <Route path="/items" element={<MenuItems/>} />
+
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/order" element={<MealOrdering />} />
           <Route path="/profile" element={<Authentication />} />
