@@ -1,15 +1,24 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "./Authentication";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase";
 
 const Navbar = () => {
   const location = useLocation();
-  const { isAdmin } = useAuth();
+  const { isAdmin, setUser, setAdmin } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    setUser(null);
+    setAdmin(null);
+    window.location.href = "/"; // Redirect to home after sign out
+  };
 
   return (
     <nav className="bg-blue-600 text-white px-6 py-3 flex items-center justify-between shadow">
       <div className="font-bold text-lg">Cafeteria Management</div>
-      <div className="flex gap-6">
+      <div className="flex gap-6 items-center">
         {isAdmin ? (
           <>
             <Link
@@ -20,22 +29,28 @@ const Navbar = () => {
             </Link>
             <Link
               to="/offline"
-              className={location.pathname === "/dashboard" ? "underline" : ""}
+              className={location.pathname === "/offline" ? "underline" : ""}
             >
-              offline sales
+              Offline Sales
             </Link>
             <Link
-              to="/inventory"
-              className={location.pathname === "/inventory" ? "underline" : ""}
+              to="/analytics"
+              className={location.pathname === "/analytics" ? "underline" : ""}
             >
-              Inventory
+              Analytics
             </Link>
+            <button
+              onClick={handleSignOut}
+              className="ml-4 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+            >
+              Sign Out
+            </button>
           </>
         ) : (
           <>
             <Link
               to="/order"
-              className={location.pathname === "/" ? "underline" : ""}
+              className={location.pathname === "/order" ? "underline" : ""}
             >
               Order Meals
             </Link>
@@ -43,8 +58,14 @@ const Navbar = () => {
               to="/profile"
               className={location.pathname === "/profile" ? "underline" : ""}
             >
-              Profile
+              login
             </Link>
+            <button
+              onClick={handleSignOut}
+              className="ml-4 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+            >
+              Sign Out
+            </button>
           </>
         )}
       </div>

@@ -14,6 +14,7 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null); // Firebase user
   const [admin, setAdmin] = useState(null); // Admin email
+  const [isAdmin, setIsAdmin] = useState(false); // <-- Add this line
   const [loading, setLoading] = useState(true); // Loading state
 
   // Check auth state on mount
@@ -21,9 +22,11 @@ export function AuthProvider({ children }) {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         setUser(user);
+        setIsAdmin(false); // Reset admin status on user login
         setLoading(false);
       } else {
         setUser(null);
+        setIsAdmin(false);
         setLoading(false);
       }
     });
@@ -31,8 +34,23 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
+  // When admin logs in, set isAdmin true
+  const handleSetAdmin = (email) => {
+    setAdmin(email);
+    setIsAdmin(true);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, admin, setAdmin, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        setUser,
+        admin,
+        setAdmin: handleSetAdmin,
+        isAdmin,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -163,7 +181,8 @@ function AdminAuthForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const navigate = useNavigate(); // Add this line
+  const { setAdmin } = useAuth(); // <-- Add this line
+  const navigate = useNavigate();
 
   const handleAdminSignIn = async () => {
     setError("");
@@ -178,8 +197,9 @@ function AdminAuthForm() {
         const data = adminDoc.data();
         if (data.password === password) {
           setIsAuthenticated(true);
+          setAdmin(email); // <-- Set admin context (isAdmin true)
           setSuccess("Admin signed in!");
-          setTimeout(() => navigate("/dashboard"), 1000); // Redirect after success
+          setTimeout(() => navigate("/dashboard"), 1000);
         } else {
           setError("Incorrect password");
         }
