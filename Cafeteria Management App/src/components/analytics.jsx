@@ -20,6 +20,7 @@ const Analytics = () => {
   const [onlinePrediction, setOnlinePrediction] = useState(null);
   const [offlinePrediction, setOfflinePrediction] = useState(null);
   const [dailyStats, setDailyStats] = useState([]);
+  const [itemPredictions, setItemPredictions] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -99,6 +100,70 @@ const Analytics = () => {
           predictedOffline: Math.max(0, Math.round(predictedOffline)),
         });
       }
+
+      // --- Item-wise prediction ---
+      // Collect all unique item names from both sales collections
+      const allItems = Array.from(
+        new Set([
+          ...online.map((s) => s.mealName),
+          ...offline.map((s) => s.mealName),
+        ])
+      ).filter(Boolean);
+
+      const itemPreds = [];
+
+      for (const item of allItems) {
+        // Aggregate daily sales for this item
+        const itemOnline = online.filter((s) => s.mealName === item);
+        const itemOffline = offline.filter((s) => s.mealName === item);
+
+        // Get all days for this item
+        const itemDays = Array.from(
+          new Set([
+            ...itemOnline.map((s) => s.date.toISOString().slice(0, 10)),
+            ...itemOffline.map((s) => s.date.toISOString().slice(0, 10)),
+          ])
+        ).sort();
+
+        // Prepare daily sales arrays
+        const xItem = itemDays.map((_, idx) => idx + 1);
+        const yOnlineItem = itemDays.map((day) =>
+          itemOnline
+            .filter((s) => s.date.toISOString().slice(0, 10) === day)
+            .reduce((sum, s) => sum + (s.quantity || 1), 0)
+        );
+        const yOfflineItem = itemDays.map((day) =>
+          itemOffline
+            .filter((s) => s.date.toISOString().slice(0, 10) === day)
+            .reduce((sum, s) => sum + (s.quantity || 1), 0)
+        );
+
+        // Predict next day's sales for this item (online and offline)
+        let predOnline = null;
+        let predOffline = null;
+        if (xItem.length > 1) {
+          const { slope, intercept } = linearRegression(xItem, yOnlineItem);
+          predOnline = Math.max(
+            0,
+            Math.round(slope * (xItem.length + 1) + intercept)
+          );
+          const { slope: offSlope, intercept: offIntercept } = linearRegression(
+            xItem,
+            yOfflineItem
+          );
+          predOffline = Math.max(
+            0,
+            Math.round(offSlope * (xItem.length + 1) + offIntercept)
+          );
+        }
+
+        itemPreds.push({
+          item,
+          predOnline,
+          predOffline,
+        });
+      }
+      setItemPredictions(itemPreds);
     };
 
     fetchData();
@@ -168,6 +233,35 @@ const Analytics = () => {
               ₹{offlinePrediction.predictedOffline}
             </span>
           </p>
+        </div>
+      )}
+      {itemPredictions.length > 0 && (
+        <div className="bg-yellow-50 p-4 rounded mt-4">
+          <h4 className="font-semibold mb-2">
+            Predicted Item Sales (Next Day)
+          </h4>
+          <table className="w-full text-left">
+            <thead>
+              <tr>
+                <th className="pr-4">Item</th>
+                <th className="pr-4">Online Predicted Qty</th>
+                <th>Offline Predicted Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              {itemPredictions.map((pred, idx) => (
+                <tr key={idx}>
+                  <td className="pr-4 py-1">{pred.item}</td>
+                  <td className="pr-4 py-1">
+                    {pred.predOnline !== null ? pred.predOnline : "-"}
+                  </td>
+                  <td className="py-1">
+                    {pred.predOffline !== null ? pred.predOffline : "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
