@@ -17,7 +17,8 @@ function linearRegression(x, y) {
 const Analytics = () => {
   const [offlineSales, setOfflineSales] = useState([]);
   const [onlineSales, setOnlineSales] = useState([]);
-  const [prediction, setPrediction] = useState(null);
+  const [onlinePrediction, setOnlinePrediction] = useState(null);
+  const [offlinePrediction, setOfflinePrediction] = useState(null);
   const [dailyStats, setDailyStats] = useState([]);
 
   useEffect(() => {
@@ -59,12 +60,13 @@ const Analytics = () => {
       const offlineDaily = getDailyTotals(offline);
       const onlineDaily = getDailyTotals(online);
 
-      // Prepare data for regression: x = offline, y = online, by day
+      // Prepare data for regression: x = day index, y = sales, for each type
       const days = Array.from(
         new Set([...Object.keys(offlineDaily), ...Object.keys(onlineDaily)])
       ).sort();
-      const x = days.map((day) => offlineDaily[day] || 0);
-      const y = days.map((day) => onlineDaily[day] || 0);
+      const x = days.map((_, idx) => idx + 1); // day indices
+      const yOnline = days.map((day) => onlineDaily[day] || 0);
+      const yOffline = days.map((day) => offlineDaily[day] || 0);
 
       // Prepare daily stats for display
       const stats = days.map((day) => ({
@@ -74,16 +76,27 @@ const Analytics = () => {
       }));
       setDailyStats(stats);
 
-      if (x.length > 1 && y.length > 1) {
-        const { slope, intercept } = linearRegression(x, y);
-        // Predict online sales for next day based on today's offline sales
-        const todayOffline = x[x.length - 1];
-        const predictedOnline = slope * todayOffline + intercept;
-        setPrediction({
+      // Predict next day's online sales based on previous online sales
+      if (x.length > 1) {
+        const { slope, intercept } = linearRegression(x, yOnline);
+        const nextDay = x.length + 1;
+        const predictedOnline = slope * nextDay + intercept;
+        setOnlinePrediction({
           slope,
           intercept,
-          todayOffline,
           predictedOnline: Math.max(0, Math.round(predictedOnline)),
+        });
+
+        // Predict next day's offline sales based on previous offline sales
+        const { slope: offSlope, intercept: offIntercept } = linearRegression(
+          x,
+          yOffline
+        );
+        const predictedOffline = offSlope * nextDay + offIntercept;
+        setOfflinePrediction({
+          offSlope,
+          offIntercept,
+          predictedOffline: Math.max(0, Math.round(predictedOffline)),
         });
       }
     };
@@ -135,15 +148,24 @@ const Analytics = () => {
           ))}
         </ul>
       </div>
-      {prediction && (
-        <div className="bg-blue-50 p-4 rounded">
-          <h4 className="font-semibold mb-2">Prediction</h4>
+      {onlinePrediction && (
+        <div className="bg-blue-50 p-4 rounded mb-4">
+          <h4 className="font-semibold mb-2">Online Sales Prediction</h4>
           <p>
-            Based on regression, if today's offline sales are ₹
-            {prediction.todayOffline},<br />
-            predicted online sales for next day:{" "}
+            Based on regression, predicted online sales for next day:{" "}
             <span className="font-bold text-blue-700">
-              ₹{prediction.predictedOnline}
+              ₹{onlinePrediction.predictedOnline}
+            </span>
+          </p>
+        </div>
+      )}
+      {offlinePrediction && (
+        <div className="bg-green-50 p-4 rounded">
+          <h4 className="font-semibold mb-2">Offline Sales Prediction</h4>
+          <p>
+            Based on regression, predicted offline sales for next day:{" "}
+            <span className="font-bold text-green-700">
+              ₹{offlinePrediction.predictedOffline}
             </span>
           </p>
         </div>
