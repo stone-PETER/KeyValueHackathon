@@ -24,6 +24,7 @@ function MealAdmin() {
   const [scheduledMenus, setScheduledMenus] = useState([]);
   const [activateSuccess, setActivateSuccess] = useState([]);
   const [allMenuItems, setAllMenuItems] = useState([]); // For dropdown
+  const [activeMenus, setActiveMenus] = useState([]);
 
   useEffect(() => {
     const fetchMenus = async () => {
@@ -34,6 +35,7 @@ function MealAdmin() {
       }));
       setPreviousMenus(allMenus);
       setScheduledMenus(allMenus.filter((menu) => menu.status === "scheduled"));
+      setActiveMenus(allMenus.filter((menu) => menu.status === "active"));
 
       // Collect all unique items from all menus for dropdown
       const items = [];
@@ -96,6 +98,12 @@ function MealAdmin() {
   const activateMenu = async (menuId) => {
     await updateDoc(doc(db, "cafeteria_menus", menuId), { status: "active" });
     setActivateSuccess("Menu activated!");
+    setTimeout(() => setActivateSuccess(""), 2000);
+  };
+
+  const deactivateMenu = async (menuId) => {
+    await updateDoc(doc(db, "cafeteria_menus", menuId), { status: "inactive" });
+    setActivateSuccess("Menu deactivated!");
     setTimeout(() => setActivateSuccess(""), 2000);
   };
 
@@ -190,6 +198,24 @@ function MealAdmin() {
       )}
 
       <hr className="my-4" />
+
+      <h3 className="font-medium mb-2">Active Menus:</h3>
+      <ul className="list-disc ml-4 max-h-32 overflow-y-scroll mb-4">
+        {activeMenus.length === 0 && (
+          <li className="text-gray-500">No active menus.</li>
+        )}
+        {activeMenus.map((menu) => (
+          <li key={menu.id} className="mb-1 flex items-center gap-2">
+            {menu.date} - {menu.items.length} items
+            <button
+              onClick={() => deactivateMenu(menu.id)}
+              className="ml-2 text-red-700 underline"
+            >
+              Deactivate
+            </button>
+          </li>
+        ))}
+      </ul>
 
       <h3 className="font-medium mb-2">Scheduled Menus:</h3>
       <ul className="list-disc ml-4 max-h-32 overflow-y-scroll mb-4">
